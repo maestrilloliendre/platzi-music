@@ -1,8 +1,15 @@
 <template lang="pug">
   #app
     Pm-header
-    section.section
-      nav.nav.has-shadow
+
+    pm-notification(v-show="showNotification", :success="hasResult")
+      p(v-if="hasResult", slot="body") Encontrados: {{ total }}
+      p(v-else, slot="body") La búsqueda no ha obtenido resultados
+    
+
+    pm-loader(v-show="isLoading")
+    section.section(v-show="!isLoading")
+      nav.nav
         .container <!-- lo mismo que nav.container --> 
           input.input.is-large(
             type="text", 
@@ -16,45 +23,89 @@
         small {{ searchMessage }}
 
       .container
-        .columns
-          .column(v-for="track in tracks") 
-            | {{ track.name }} - {{ track.artists[0].name }}
-    pm-footer        
+        .columns.is-multiline
+          .column.is-one-quarter(v-for="track in tracks")
+            pm-track(
+              :class="{ 'is-active': track.id == selectedTrack }",
+              :track="track",
+              @select="setSelectedTrack"
+            )
+        
+    pm-footer
 </template>
-
 <script>
-import trackService from './services/track'
-import PmFooter from './components/layout/Footer.vue'
-import PmHeader from './components/layout/Header.vue'
+  import trackService from '@/services/track'
 
-export default {
-  name: 'app',
+  import PmFooter from '@/components/layout/Footer.vue'
+  import PmHeader from '@/components/layout/Header.vue'
 
-  components: { PmFooter, PmHeader },
+  import PmTrack from '@/components/track.vue'
 
-  data () {
-    return {
-      searchQuery: '',
-      tracks: []
-    }
-  },
+  import PmNotification from '@/components/shared/Notification.vue'
+  import PmLoader from '@/components/shared/Loader.vue'
 
-  methods: {
-    search () {
-      if (!this.searchQuery) { return }
-      trackService.search(this.searchQuery)
-        .then(res => {
-          this.tracks = res.tracks.items
-        })
-    }
-  },
+  export default {
+    name: 'app',
 
-  computed: {
-    searchMessage () {
-      return `Encontrados: ${this.tracks.length}`
+    components: { PmFooter, PmHeader, PmTrack, PmLoader, PmNotification },
+
+    data () {
+      return {
+        searchQuery: '',
+        tracks: [],
+
+        isLoading: false,
+
+        showNotification: false,
+
+        selectedTrack: '',
+
+        hasResult: false,
+
+        total: 0
+      }
+    },
+
+    methods: {
+      search () {
+        if (!this.searchQuery) { return }
+
+        this.isLoading = true
+        this.showNotification = false
+
+        trackService.search(this.searchQuery)
+          .then(res => {
+            console.log(res)
+            this.showNotification = true
+            this.hasResult = res.tracks.total !== 0
+            this.total = res.tracks.total
+            this.tracks = res.tracks.items
+            this.isLoading = false
+          })
+      },
+
+      setSelectedTrack (id) {
+        this.selectedTrack = id
+      }
+
+    },
+
+    computed: {
+      searchMessage () {
+        return `Encontrados: ${this.tracks.length}`
+      }
+    },
+
+    watch: {
+      showNotification () {
+        if (this.showNotification === !this.hasResult) {
+          setTimeout(() => {
+            this.showNotification = false
+          }, 3000)
+        }
+      }
     }
   }
-}
 </script>
 
 <style lang="scss">
@@ -62,6 +113,10 @@ export default {
 
   .results {
     margin-top: 50px
+  }
+
+  .is-active {
+    border: 3px #23d160 solid;
   }
 
 </style>
