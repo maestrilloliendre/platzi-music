@@ -5,8 +5,7 @@
     pm-notification(v-show="showNotification", :success="hasResult")
       p(v-if="hasResult", slot="body") Encontrados: {{ total }}
       p(v-else, slot="body") La búsqueda no ha obtenido resultados
-    
-
+      
     pm-loader(v-show="isLoading")
     section.section(v-show="!isLoading")
       nav.nav
