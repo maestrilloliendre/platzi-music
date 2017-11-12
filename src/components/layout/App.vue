@@ -1,9 +1,6 @@
 <template lang="pug">
   #app
     Pm-header
-
-    router-view
-
     pm-footer
 </template>
 <script>
